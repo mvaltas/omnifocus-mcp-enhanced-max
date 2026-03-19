@@ -1,18 +1,17 @@
-import { executeAppleScript } from '../../utils/scriptExecution.js';
+import { executeAppleScript, escapeAppleScript } from '../../utils/scriptExecution.js';
 import { formatDateForAppleScript } from '../../utils/dateFormatter.js';
 /**
  * Generate pure AppleScript for task creation
  */
-function generateAppleScript(params) {
-    // Sanitize and prepare parameters for AppleScript
-    const name = params.name.replace(/['"\\]/g, '\\$&'); // Escape quotes and backslashes
-    const note = params.note?.replace(/['"\\]/g, '\\$&') || '';
+export function generateAppleScript(params) {
+    const name = escapeAppleScript(params.name);
+    const note = params.note ? escapeAppleScript(params.note) : '';
     const flagged = params.flagged === true;
     const estimatedMinutes = params.estimatedMinutes?.toString() || '';
     const tags = params.tags || [];
-    const projectName = params.projectName?.replace(/['"\\]/g, '\\$&') || '';
-    const parentTaskId = params.parentTaskId?.replace(/['"\\]/g, '\\$&') || '';
-    const parentTaskName = params.parentTaskName?.replace(/['"\\]/g, '\\$&') || '';
+    const projectName = params.projectName ? escapeAppleScript(params.projectName) : '';
+    const parentTaskId = params.parentTaskId ? escapeAppleScript(params.parentTaskId) : '';
+    const parentTaskName = params.parentTaskName ? escapeAppleScript(params.parentTaskName) : '';
     // Prepare date construction code OUTSIDE the tell block to avoid error -1723
     let dateSetupScript = '';
     const useDueDate = !!params.dueDate;
@@ -71,7 +70,7 @@ function generateAppleScript(params) {
         
         -- Add tags if provided
         ${tags.length > 0 ? tags.map(tag => {
-        const sanitizedTag = tag.replace(/['"\\]/g, '\\$&');
+        const sanitizedTag = escapeAppleScript(tag);
         return `
           try
             set theTag to first flattened tag where name = "${sanitizedTag}"
@@ -94,20 +93,12 @@ function generateAppleScript(params) {
 /**
  * Validate parent task parameters to prevent conflicts
  */
-async function validateParentTaskParams(params) {
-    // Check if both parentTaskId and parentTaskName are provided
+export function validateParentTaskParams(params) {
     if (params.parentTaskId && params.parentTaskName) {
-        return {
-            valid: false,
-            error: "Cannot specify both parentTaskId and parentTaskName. Please use only one."
-        };
+        return { valid: false, error: "Cannot specify both parentTaskId and parentTaskName. Please use only one." };
     }
-    // Check if parent task is specified along with projectName
     if ((params.parentTaskId || params.parentTaskName) && params.projectName) {
-        return {
-            valid: false,
-            error: "Cannot specify both parent task and project. Subtasks inherit project from their parent."
-        };
+        return { valid: false, error: "Cannot specify both parent task and project. Subtasks inherit project from their parent." };
     }
     return { valid: true };
 }
@@ -116,45 +107,21 @@ async function validateParentTaskParams(params) {
  */
 export async function addOmniFocusTask(params) {
     try {
-        // Validate parent task parameters
-        const validation = await validateParentTaskParams(params);
+        const validation = validateParentTaskParams(params);
         if (!validation.valid) {
-            return {
-                success: false,
-                error: validation.error
-            };
+            return { success: false, error: validation.error };
         }
-        // Generate AppleScript
         const script = generateAppleScript(params);
-        console.error("Generated AppleScript:");
-        console.error(script);
-        console.error("Executing AppleScript...");
-        // Execute AppleScript using temp file (avoids shell escaping issues)
         const stdout = await executeAppleScript(script);
-        console.error("AppleScript stdout:", stdout);
-        // Parse the result
         try {
             const result = JSON.parse(stdout);
-            // Return the result
-            return {
-                success: result.success,
-                taskId: result.taskId,
-                error: result.error
-            };
+            return { success: result.success, taskId: result.taskId, error: result.error };
         }
-        catch (parseError) {
-            console.error("Error parsing AppleScript result:", parseError);
-            return {
-                success: false,
-                error: `Failed to parse result: ${stdout}`
-            };
+        catch {
+            return { success: false, error: `Failed to parse result: ${stdout}` };
         }
     }
     catch (error) {
-        console.error("Error in addOmniFocusTask:", error);
-        return {
-            success: false,
-            error: error?.message || "Unknown error in addOmniFocusTask"
-        };
+        return { success: false, error: error?.message || "Unknown error in addOmniFocusTask" };
     }
 }

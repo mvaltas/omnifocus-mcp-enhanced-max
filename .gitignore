@@ -5,7 +5,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # Build output
-# dist/ - included for GitHub installs
 build/
 
 # Environment variables
@@ -51,7 +50,3 @@ debug_*.js
 generate_*.js
 .space/
 .npmignore
-
-# Personal files and reports
-*报告*.md
-个人文档/

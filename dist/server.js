@@ -47,7 +47,7 @@ server.tool("get_tasks_by_tag", "Get tasks filtered by OmniFocus tags (labels li
 server.tool("filter_tasks", "Advanced task filtering with unlimited perspective combinations - status, dates, projects, tags, search, and more", filterTasksTool.schema.shape, filterTasksTool.handler);
 // Custom perspective tools
 server.tool("list_custom_perspectives", "List all custom perspectives defined in OmniFocus", listCustomPerspectivesTool.schema.shape, listCustomPerspectivesTool.handler);
-server.tool("get_custom_perspective_tasks", "Get tasks from a specific OmniFocus custom perspective by name. Use this when user refers to perspective names like '今日工作安排', '今日复盘', '本周项目' etc. - these are custom views created in OmniFocus, NOT tags. Supports hierarchical tree display of task relationships.", getCustomPerspectiveTasksTool.schema.shape, getCustomPerspectiveTasksTool.handler);
+server.tool("get_custom_perspective_tasks", "Get tasks from a specific OmniFocus custom perspective by name. Use this when user refers to a custom perspective name - these are custom views created in OmniFocus, NOT tags. Supports hierarchical tree display of task relationships.", getCustomPerspectiveTasksTool.schema.shape, getCustomPerspectiveTasksTool.handler);
 // Start the MCP server
 const transport = new StdioServerTransport();
 // Use await with server.connect to ensure proper connection

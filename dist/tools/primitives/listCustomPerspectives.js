@@ -2,53 +2,42 @@ import { executeOmniFocusScript } from '../../utils/scriptExecution.js';
 export async function listCustomPerspectives(options = {}) {
     const { format = 'simple' } = options;
     try {
-        console.log('🚀 开始执行 listCustomPerspectives 脚本...');
         // Execute the list custom perspectives script
         const result = await executeOmniFocusScript('@listCustomPerspectives.js', {});
-        console.log('📋 脚本执行完成，结果类型:', typeof result);
-        console.log('📋 脚本执行结果:', result);
-        // 处理各种可能的返回类型
         let data;
         if (typeof result === 'string') {
-            console.log('📝 结果是字符串，尝试解析 JSON...');
             try {
                 data = JSON.parse(result);
-                console.log('✅ JSON 解析成功:', data);
             }
             catch (parseError) {
-                console.error('❌ JSON 解析失败:', parseError);
-                throw new Error(`解析字符串结果失败: ${result}`);
+                throw new Error(`Failed to parse string result: ${result}`);
             }
         }
         else if (typeof result === 'object' && result !== null) {
-            console.log('🔄 结果是对象，直接使用...');
             data = result;
         }
         else {
-            console.error('❌ 无效的结果类型:', typeof result, result);
-            throw new Error(`脚本执行返回了无效的结果类型: ${typeof result}, 值: ${result}`);
+            throw new Error(`Script returned an invalid result type: ${typeof result}, value: ${result}`);
         }
-        // 检查是否有错误
+        // Check for errors
         if (!data.success) {
             throw new Error(data.error || 'Unknown error occurred');
         }
-        // 格式化输出
+        // Format output
         if (data.count === 0) {
-            return "📋 **自定义透视列表**\n\n暂无自定义透视。";
+            return "📋 **Custom Perspectives**\n\nNo custom perspectives found.";
         }
         if (format === 'simple') {
-            // 简单格式：只显示名称列表
             const perspectiveNames = data.perspectives.map((p) => p.name);
-            return `📋 **自定义透视列表** (${data.count}个)\n\n${perspectiveNames.map((name, index) => `${index + 1}. ${name}`).join('\n')}`;
+            return `📋 **Custom Perspectives** (${data.count})\n\n${perspectiveNames.map((name, index) => `${index + 1}. ${name}`).join('\n')}`;
         }
         else {
-            // 详细格式：显示名称和标识符
             const perspectiveDetails = data.perspectives.map((p, index) => `${index + 1}. **${p.name}**\n   🆔 ${p.identifier}`);
-            return `📋 **自定义透视列表** (${data.count}个)\n\n${perspectiveDetails.join('\n\n')}`;
+            return `📋 **Custom Perspectives** (${data.count})\n\n${perspectiveDetails.join('\n\n')}`;
         }
     }
     catch (error) {
         console.error('Error in listCustomPerspectives:', error);
-        return `❌ **错误**: ${error instanceof Error ? error.message : String(error)}`;
+        return `❌ **Error**: ${error instanceof Error ? error.message : String(error)}`;
     }
 }

@@ -1,4 +1,4 @@
-import { executeAppleScript } from '../../utils/scriptExecution.js';
+import { executeAppleScript, escapeAppleScript } from '../../utils/scriptExecution.js';
 import { formatDateForAppleScript } from '../../utils/dateFormatter.js';
 
 // Status options for tasks and projects
@@ -35,10 +35,9 @@ export interface EditItemParams {
 /**
  * Generate pure AppleScript for item editing
  */
-function generateAppleScript(params: EditItemParams): string {
-  // Sanitize and prepare parameters for AppleScript
-  const id = params.id?.replace(/['"\\]/g, '\\$&') || ''; // Escape quotes and backslashes
-  const name = params.name?.replace(/['"\\]/g, '\\$&') || '';
+export function generateAppleScript(params: EditItemParams): string {
+  const id = params.id ? escapeAppleScript(params.id) : '';
+  const name = params.name ? escapeAppleScript(params.name) : '';
   const itemType = params.itemType;
 
   // Verify we have at least one identifier
@@ -110,7 +109,7 @@ function generateAppleScript(params: EditItemParams): string {
   if (params.newName !== undefined) {
     script += `
           -- Update name
-          set name of foundItem to "${params.newName.replace(/['"\\]/g, '\\$&')}"
+          set name of foundItem to "${escapeAppleScript(params.newName)}"
           set end of changedProperties to "name"
 `;
   }
@@ -118,7 +117,7 @@ function generateAppleScript(params: EditItemParams): string {
   if (params.newNote !== undefined) {
     script += `
           -- Update note
-          set note of foundItem to "${params.newNote.replace(/['"\\]/g, '\\$&')}"
+          set note of foundItem to "${escapeAppleScript(params.newNote)}"
           set end of changedProperties to "note"
 `;
   }
@@ -199,7 +198,7 @@ function generateAppleScript(params: EditItemParams): string {
 
     // Move task to a different project
     if (params.newProjectName !== undefined) {
-      const projectName = params.newProjectName.replace(/['"\\]/g, '\\$&');
+      const projectName = escapeAppleScript(params.newProjectName);
       script += `
           -- Move to new project
           set destProject to missing value
@@ -219,7 +218,7 @@ function generateAppleScript(params: EditItemParams): string {
 
     // Handle tag operations
     if (params.replaceTags && params.replaceTags.length > 0) {
-      const tagsList = params.replaceTags.map(tag => `"${tag.replace(/['"\\]/g, '\\$&')}"`).join(", ");
+      const tagsList = params.replaceTags.map(tag => `"${escapeAppleScript(tag)}"`).join(", ");
       script += `
           -- Replace all tags
           set tagNames to {${tagsList}}
@@ -247,7 +246,7 @@ function generateAppleScript(params: EditItemParams): string {
     } else {
       // Add tags if specified
       if (params.addTags && params.addTags.length > 0) {
-        const tagsList = params.addTags.map(tag => `"${tag.replace(/['"\\]/g, '\\$&')}"`).join(", ");
+        const tagsList = params.addTags.map(tag => `"${escapeAppleScript(tag)}"`).join(", ");
         script += `
           -- Add tags
           set tagNames to {${tagsList}}
@@ -268,7 +267,7 @@ function generateAppleScript(params: EditItemParams): string {
 
       // Remove tags if specified
       if (params.removeTags && params.removeTags.length > 0) {
-        const tagsList = params.removeTags.map(tag => `"${tag.replace(/['"\\]/g, '\\$&')}"`).join(", ");
+        const tagsList = params.removeTags.map(tag => `"${escapeAppleScript(tag)}"`).join(", ");
         script += `
           -- Remove tags
           set tagNames to {${tagsList}}
@@ -311,7 +310,7 @@ function generateAppleScript(params: EditItemParams): string {
 
     // Move to a new folder
     if (params.newFolderName !== undefined) {
-      const folderName = params.newFolderName.replace(/['"\\]/g, '\\$&');
+      const folderName = escapeAppleScript(params.newFolderName);
       script += `
           -- Move to new folder
           set destFolder to missing value
@@ -368,51 +367,16 @@ export async function editItem(params: EditItemParams): Promise<{
   error?: string
 }> {
   try {
-    // Generate AppleScript
     const script = generateAppleScript(params);
-
-    console.error("Executing AppleScript for editing...");
-    console.error(`Item type: ${params.itemType}, ID: ${params.id || 'not provided'}, Name: ${params.name || 'not provided'}`);
-
-    // Log a preview of the script for debugging (first few lines)
-    const scriptPreview = script.split('\n').slice(0, 10).join('\n') + '\n...';
-    console.error("AppleScript preview:\n", scriptPreview);
-
-    // Execute AppleScript using temp file (avoids shell escaping issues)
     const stdout = await executeAppleScript(script);
 
-    console.error("AppleScript stdout:", stdout);
-
-    // Parse the result
     try {
       const result = JSON.parse(stdout);
-
-      // Return the result
-      return {
-        success: result.success,
-        id: result.id,
-        name: result.name,
-        changedProperties: result.changedProperties,
-        error: result.error
-      };
-    } catch (parseError) {
-      console.error("Error parsing AppleScript result:", parseError);
-      return {
-        success: false,
-        error: `Failed to parse result: ${stdout}`
-      };
+      return { success: result.success, id: result.id, name: result.name, changedProperties: result.changedProperties, error: result.error };
+    } catch {
+      return { success: false, error: `Failed to parse result: ${stdout}` };
     }
   } catch (error: any) {
-    console.error("Error in editItem execution:", error);
-
-    // Include more detailed error information
-    if (error.message && error.message.includes('syntax error')) {
-      console.error("This appears to be an AppleScript syntax error. Review the script generation logic.");
-    }
-
-    return {
-      success: false,
-      error: error?.message || "Unknown error in editItem"
-    };
+    return { success: false, error: error?.message || "Unknown error in editItem" };
   }
 } 

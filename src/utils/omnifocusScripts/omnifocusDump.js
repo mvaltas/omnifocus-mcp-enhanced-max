@@ -36,6 +36,17 @@
           if (enumObj === null || enumObj === undefined) return null;
           return mapObj[enumObj] || "Unknown";
         }
+
+        // Build the full hierarchical path for a tag (e.g. "Work : Projects : Current")
+        function getTagPath(tag) {
+          const parts = [];
+          let current = tag;
+          while (current) {
+            parts.unshift(current.name);
+            current = current.parent;
+          }
+          return parts.join(' : ');
+        }
     
         // Create database export object using Maps for faster lookups
         const exportData = {
@@ -121,6 +132,7 @@
             const tagData = {
               id: tagId,
               name: tag.name,
+              path: getTagPath(tag),
               parentTagID: tag.parent ? tag.parent.id.primaryKey : null,
               active: tag.active,
               allowsNextAction: tag.allowsNextAction,

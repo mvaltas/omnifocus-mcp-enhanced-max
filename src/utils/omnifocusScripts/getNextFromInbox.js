@@ -7,6 +7,17 @@
       return date.toISOString();
     }
 
+    // Build the full hierarchical path for a tag (e.g. "Work : Projects : Current")
+    function getTagPath(tag) {
+      const parts = [];
+      let current = tag;
+      while (current) {
+        parts.unshift(current.name);
+        current = current.parent;
+      }
+      return parts.join(' : ');
+    }
+
     // Get task status enum mapping
     const taskStatusMap = {
       [Task.Status.Available]: "Available",
@@ -71,7 +82,7 @@
       estimatedMinutes: oldestTask.estimatedMinutes,
       tags: oldestTask.tags.map(tag => ({
         id: tag.id.primaryKey,
-        name: tag.name
+        name: getTagPath(tag)
       })),
       inInbox: true
     };

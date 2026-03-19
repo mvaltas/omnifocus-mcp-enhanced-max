@@ -1,4 +1,4 @@
-import { executeAppleScript } from '../../utils/scriptExecution.js';
+import { executeAppleScript, escapeAppleScript } from '../../utils/scriptExecution.js';
 import { formatDateForAppleScript } from '../../utils/dateFormatter.js';
 
 // Interface for project creation parameters
@@ -17,14 +17,13 @@ export interface AddProjectParams {
 /**
  * Generate pure AppleScript for project creation
  */
-function generateAppleScript(params: AddProjectParams): string {
-  // Sanitize and prepare parameters for AppleScript
-  const name = params.name.replace(/['"\\]/g, '\\$&'); // Escape quotes and backslashes
-  const note = params.note?.replace(/['"\\]/g, '\\$&') || '';
+export function generateAppleScript(params: AddProjectParams): string {
+  const name = escapeAppleScript(params.name);
+  const note = params.note ? escapeAppleScript(params.note) : '';
   const flagged = params.flagged === true;
   const estimatedMinutes = params.estimatedMinutes?.toString() || '';
   const tags = params.tags || [];
-  const folderName = params.folderName?.replace(/['"\\]/g, '\\$&') || '';
+  const folderName = params.folderName ? escapeAppleScript(params.folderName) : '';
   const sequential = params.sequential === true;
 
   // Prepare date construction code OUTSIDE the tell block to avoid error -1723
@@ -72,7 +71,7 @@ function generateAppleScript(params: AddProjectParams): string {
         
         -- Add tags if provided
         ${tags.length > 0 ? tags.map(tag => {
-    const sanitizedTag = tag.replace(/['"\\]/g, '\\$&');
+    const sanitizedTag = escapeAppleScript(tag);
     return `
           try
             set theTag to first flattened tag where name = "${sanitizedTag}"
@@ -99,38 +98,16 @@ function generateAppleScript(params: AddProjectParams): string {
  */
 export async function addProject(params: AddProjectParams): Promise<{ success: boolean, projectId?: string, error?: string }> {
   try {
-    // Generate AppleScript
     const script = generateAppleScript(params);
-
-    console.error("Executing AppleScript...");
-
-    // Execute AppleScript using temp file (avoids shell escaping issues)
     const stdout = await executeAppleScript(script);
 
-    console.error("AppleScript stdout:", stdout);
-
-    // Parse the result
     try {
       const result = JSON.parse(stdout);
-
-      // Return the result
-      return {
-        success: result.success,
-        projectId: result.projectId,
-        error: result.error
-      };
-    } catch (parseError) {
-      console.error("Error parsing AppleScript result:", parseError);
-      return {
-        success: false,
-        error: `Failed to parse result: ${stdout}`
-      };
+      return { success: result.success, projectId: result.projectId, error: result.error };
+    } catch {
+      return { success: false, error: `Failed to parse result: ${stdout}` };
     }
   } catch (error: any) {
-    console.error("Error in addProject:", error);
-    return {
-      success: false,
-      error: error?.message || "Unknown error in addProject"
-    };
+    return { success: false, error: error?.message || "Unknown error in addProject" };
   }
 } 

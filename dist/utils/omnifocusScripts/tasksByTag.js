@@ -2,7 +2,7 @@
 (() => {
   try {
     // Parameters will be injected by the script execution system
-    const tagName = injectedArgs ? injectedArgs.tagName : "编程"; // Default for testing
+    const tagName = injectedArgs ? injectedArgs.tagName : null; // Must be provided by caller
     const hideCompleted = injectedArgs ? injectedArgs.hideCompleted : true; // Default to true
     const exactMatch = injectedArgs ? injectedArgs.exactMatch : false;
     
@@ -17,6 +17,17 @@
     function formatDate(date) {
       if (!date) return null;
       return date.toISOString();
+    }
+
+    // Build the full hierarchical path for a tag (e.g. "Work : Projects : Current")
+    function getTagPath(tag) {
+      const parts = [];
+      let current = tag;
+      while (current) {
+        parts.unshift(current.name);
+        current = current.parent;
+      }
+      return parts.join(' : ');
     }
     
     // Get task status enum mapping
@@ -45,24 +56,27 @@
     
     // Get all active tags for reference
     const allTags = flattenedTags.filter(tag => tag.active);
-    exportData.availableTags = allTags.map(tag => tag.name).sort();
+    exportData.availableTags = allTags.map(tag => getTagPath(tag)).sort();
     
     console.log(`Searching for tags matching "${tagName}" (exact: ${exactMatch})`);
     
-    // Find matching tags
+    // Find matching tags — check both leaf name and full path to support nested tags
+    const searchLower = tagName.toLowerCase();
     let matchingTags = [];
     if (exactMatch) {
-      matchingTags = allTags.filter(tag => 
-        tag.name.toLowerCase() === tagName.toLowerCase()
-      );
+      matchingTags = allTags.filter(tag => {
+        const path = getTagPath(tag);
+        return tag.name.toLowerCase() === searchLower || path.toLowerCase() === searchLower;
+      });
     } else {
-      matchingTags = allTags.filter(tag => 
-        tag.name.toLowerCase().includes(tagName.toLowerCase())
-      );
+      matchingTags = allTags.filter(tag => {
+        const path = getTagPath(tag);
+        return tag.name.toLowerCase().includes(searchLower) || path.toLowerCase().includes(searchLower);
+      });
     }
-    
-    exportData.matchedTags = matchingTags.map(tag => tag.name);
-    console.log(`Found ${matchingTags.length} matching tags: ${exportData.matchedTags.join(', ')}`);
+
+    exportData.matchedTags = matchingTags.map(tag => getTagPath(tag));
+    console.log(`Found ${matchingTags.length} matching tags: ${exportData.matchedTags.join(', ')} (searched by full path)`);
     
     if (matchingTags.length === 0) {
       console.log("No matching tags found");
@@ -113,7 +127,7 @@
           inInbox: task.inInbox,
           tags: task.tags.map(tag => ({
             id: tag.id.primaryKey,
-            name: tag.name
+            name: getTagPath(tag)
           }))
         };
         

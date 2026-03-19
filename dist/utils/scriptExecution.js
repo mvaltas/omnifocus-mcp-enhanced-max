@@ -8,6 +8,12 @@ import { dirname } from 'path';
 import { existsSync } from 'fs';
 const execAsync = promisify(exec);
 /**
+ * Escape a string for safe use inside AppleScript string literals
+ */
+export function escapeAppleScript(str) {
+    return str.replace(/['"\\]/g, '\\$&');
+}
+/**
  * Safely execute AppleScript by writing to a temp file
  * This avoids shell escaping issues with quotes and special characters
  */
@@ -96,32 +102,18 @@ export async function executeOmniFocusScript(scriptPath, args) {
         // If arguments are provided, inject them into the script
         if (args && Object.keys(args).length > 0) {
             const argsJson = JSON.stringify(args);
-            // Inject parameters at the beginning of the script
-            const parameterInjection = `
-    // Injected parameters
-    const injectedArgs = ${argsJson};
-    const perspectiveName = injectedArgs.perspectiveName || null;
-    const perspectiveId = injectedArgs.perspectiveId || null;
-    const hideCompleted = injectedArgs.hideCompleted !== undefined ? injectedArgs.hideCompleted : true;
-    const limit = injectedArgs.limit || 100;
-    const includeBuiltIn = injectedArgs.includeBuiltIn !== undefined ? injectedArgs.includeBuiltIn : false;
-    const includeSidebar = injectedArgs.includeSidebar !== undefined ? injectedArgs.includeSidebar : true;
-    const format = injectedArgs.format || "detailed";
-    const tagName = injectedArgs.tagName || null;
-    const exactMatch = injectedArgs.exactMatch !== undefined ? injectedArgs.exactMatch : false;
-    `;
-            // Replace any hardcoded parameters in the script with injected ones
-            scriptContent = scriptContent.replace(/let perspectiveName = "今日工作安排"; \/\/ Hardcode for testing/, 'let perspectiveName = injectedArgs.perspectiveName || null;');
-            scriptContent = scriptContent.replace(/let perspectiveName = null;/, 'let perspectiveName = injectedArgs.perspectiveName || null;');
-            scriptContent = scriptContent.replace(/let perspectiveId = null;/, 'let perspectiveId = injectedArgs.perspectiveId || null;');
-            scriptContent = scriptContent.replace(/let hideCompleted = true;/, 'let hideCompleted = injectedArgs.hideCompleted !== undefined ? injectedArgs.hideCompleted : true;');
-            scriptContent = scriptContent.replace(/let limit = 100;/, 'let limit = injectedArgs.limit || 100;');
-            scriptContent = scriptContent.replace(/let includeBuiltIn = false;/, 'let includeBuiltIn = injectedArgs.includeBuiltIn !== undefined ? injectedArgs.includeBuiltIn : false;');
-            scriptContent = scriptContent.replace(/let includeSidebar = true;/, 'let includeSidebar = injectedArgs.includeSidebar !== undefined ? injectedArgs.includeSidebar : true;');
-            scriptContent = scriptContent.replace(/let format = "detailed";/, 'let format = injectedArgs.format || "detailed";');
-            // Inject the parameters at the beginning of the function
-            scriptContent = scriptContent.replace('(() => {', `(() => {
-    ${parameterInjection}`);
+            // Replace hardcoded parameter declarations with injectedArgs references
+            scriptContent = scriptContent
+                .replace(/let perspectiveName = "[^"]*"; \/\/ Hardcode for testing/, 'let perspectiveName = injectedArgs.perspectiveName || null;')
+                .replace(/let perspectiveName = null;/, 'let perspectiveName = injectedArgs.perspectiveName || null;')
+                .replace(/let perspectiveId = null;/, 'let perspectiveId = injectedArgs.perspectiveId || null;')
+                .replace(/let hideCompleted = true;/, 'let hideCompleted = injectedArgs.hideCompleted !== undefined ? injectedArgs.hideCompleted : true;')
+                .replace(/let limit = 100;/, 'let limit = injectedArgs.limit || 100;')
+                .replace(/let includeBuiltIn = false;/, 'let includeBuiltIn = injectedArgs.includeBuiltIn !== undefined ? injectedArgs.includeBuiltIn : false;')
+                .replace(/let includeSidebar = true;/, 'let includeSidebar = injectedArgs.includeSidebar !== undefined ? injectedArgs.includeSidebar : true;')
+                .replace(/let format = "detailed";/, 'let format = injectedArgs.format || "detailed";');
+            // Inject injectedArgs at the beginning of the IIFE
+            scriptContent = scriptContent.replace('(() => {', `(() => {\n    const injectedArgs = ${argsJson};`);
         }
         // Create a temporary file for our JXA wrapper script
         const tempFile = join(tmpdir(), `jxa_wrapper_${Date.now()}.js`);

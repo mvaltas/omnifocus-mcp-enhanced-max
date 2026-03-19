@@ -1,4 +1,4 @@
-import { executeAppleScript } from '../../utils/scriptExecution.js';
+import { executeAppleScript, escapeAppleScript } from '../../utils/scriptExecution.js';
 
 // Interface for item removal parameters
 export interface RemoveItemParams {
@@ -10,10 +10,9 @@ export interface RemoveItemParams {
 /**
  * Generate pure AppleScript for item removal
  */
-function generateAppleScript(params: RemoveItemParams): string {
-  // Sanitize and prepare parameters for AppleScript
-  const id = params.id?.replace(/['"\\]/g, '\\$&') || ''; // Escape quotes and backslashes
-  const name = params.name?.replace(/['"\\]/g, '\\$&') || '';
+export function generateAppleScript(params: RemoveItemParams): string {
+  const id = params.id ? escapeAppleScript(params.id) : '';
+  const name = params.name ? escapeAppleScript(params.name) : '';
   const itemType = params.itemType;
 
   // Verify we have at least one identifier
@@ -90,50 +89,16 @@ function generateAppleScript(params: RemoveItemParams): string {
  */
 export async function removeItem(params: RemoveItemParams): Promise<{ success: boolean, id?: string, name?: string, error?: string }> {
   try {
-    // Generate AppleScript
     const script = generateAppleScript(params);
-
-    console.error("Executing AppleScript for removal...");
-    console.error(`Item type: ${params.itemType}, ID: ${params.id || 'not provided'}, Name: ${params.name || 'not provided'}`);
-
-    // Log a preview of the script for debugging (first few lines)
-    const scriptPreview = script.split('\n').slice(0, 10).join('\n') + '\n...';
-    console.error("AppleScript preview:\n", scriptPreview);
-
-    // Execute AppleScript using temp file (avoids shell escaping issues)
     const stdout = await executeAppleScript(script);
 
-    console.error("AppleScript stdout:", stdout);
-
-    // Parse the result
     try {
       const result = JSON.parse(stdout);
-
-      // Return the result
-      return {
-        success: result.success,
-        id: result.id,
-        name: result.name,
-        error: result.error
-      };
-    } catch (parseError) {
-      console.error("Error parsing AppleScript result:", parseError);
-      return {
-        success: false,
-        error: `Failed to parse result: ${stdout}`
-      };
+      return { success: result.success, id: result.id, name: result.name, error: result.error };
+    } catch {
+      return { success: false, error: `Failed to parse result: ${stdout}` };
     }
   } catch (error: any) {
-    console.error("Error in removeItem execution:", error);
-
-    // Include more detailed error information
-    if (error.message && error.message.includes('syntax error')) {
-      console.error("This appears to be an AppleScript syntax error. Review the script generation logic.");
-    }
-
-    return {
-      success: false,
-      error: error?.message || "Unknown error in removeItem"
-    };
+    return { success: false, error: error?.message || "Unknown error in removeItem" };
   }
 } 

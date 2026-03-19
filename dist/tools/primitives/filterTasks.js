@@ -1,9 +1,9 @@
 import { executeOmniFocusScript } from '../../utils/scriptExecution.js';
 export async function filterTasks(options = {}) {
     try {
-        // 设置默认值
+        // Set defaults
         const { perspective = "all", exactTagMatch = false, limit = 100, sortBy = "name", sortOrder = "asc" } = options;
-        // 执行常规过滤脚本
+        // Execute the filter script
         const result = await executeOmniFocusScript('@filterTasks.js', {
             ...options,
             perspective,
@@ -15,15 +15,15 @@ export async function filterTasks(options = {}) {
         if (typeof result === 'string') {
             return result;
         }
-        // 如果结果是对象，格式化它
+        // If the result is an object, format it
         if (result && typeof result === 'object') {
             const data = result;
             if (data.error) {
                 throw new Error(data.error);
             }
-            // 格式化过滤结果
+            // Format filter results
             let output = `# 🔍 FILTERED TASKS\n\n`;
-            // 显示过滤条件摘要
+            // Show filter criteria summary
             const filterSummary = buildFilterSummary(options);
             if (filterSummary) {
                 output += `**Filter**: ${filterSummary}\n\n`;
@@ -31,7 +31,7 @@ export async function filterTasks(options = {}) {
             if (data.tasks && Array.isArray(data.tasks)) {
                 if (data.tasks.length === 0) {
                     output += "🎯 No tasks match your filter criteria.\n";
-                    // 提供一些建议
+                    // Provide tips
                     output += "\n**Tips**:\n";
                     output += "- Try broadening your search criteria\n";
                     output += "- Check if tasks exist in the specified project/tags\n";
@@ -45,7 +45,7 @@ export async function filterTasks(options = {}) {
                         output += ` (showing first ${taskCount} of ${totalCount})`;
                     }
                     output += `:\n\n`;
-                    // 按项目分组显示任务
+                    // Group tasks by project
                     const tasksByProject = groupTasksByProject(data.tasks);
                     tasksByProject.forEach((tasks, projectName) => {
                         if (tasksByProject.size > 1) {
@@ -59,7 +59,7 @@ export async function filterTasks(options = {}) {
                             output += '\n';
                         }
                     });
-                    // 显示排序信息
+                    // Show sort info
                     if (data.sortedBy) {
                         output += `\n📊 **Sorted by**: ${data.sortedBy} (${data.sortOrder || 'asc'})\n`;
                     }
@@ -77,7 +77,7 @@ export async function filterTasks(options = {}) {
         throw new Error(`Failed to filter tasks: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
-// 构建过滤条件摘要
+// Build filter criteria summary
 function buildFilterSummary(options) {
     const conditions = [];
     if (options.taskStatus && options.taskStatus.length > 0) {
@@ -136,7 +136,7 @@ function buildFilterSummary(options) {
     }
     return conditions.length > 0 ? conditions.join(' | ') : '';
 }
-// 按项目分组任务
+// Group tasks by project
 function groupTasksByProject(tasks) {
     const grouped = new Map();
     tasks.forEach(task => {
@@ -148,14 +148,14 @@ function groupTasksByProject(tasks) {
     });
     return grouped;
 }
-// 格式化单个任务
+// Format a single task
 function formatTask(task) {
     let output = '';
-    // 任务基本信息
+    // Task name and flag
     const flagSymbol = task.flagged ? '🚩 ' : '';
     const statusEmoji = getStatusEmoji(task.taskStatus);
     output += `${statusEmoji} ${flagSymbol}${task.name}`;
-    // 日期信息
+    // Date info
     const dateInfo = [];
     if (task.dueDate) {
         const dueDateStr = new Date(task.dueDate).toLocaleDateString();
@@ -173,7 +173,7 @@ function formatTask(task) {
     if (dateInfo.length > 0) {
         output += ` [${dateInfo.join(', ')}]`;
     }
-    // 其他信息
+    // Additional info
     const additionalInfo = [];
     if (task.taskStatus && task.taskStatus !== 'Available') {
         additionalInfo.push(task.taskStatus);
@@ -192,18 +192,18 @@ function formatTask(task) {
         output += ` (${additionalInfo.join(', ')})`;
     }
     output += '\n';
-    // 任务备注
+    // Note
     if (task.note && task.note.trim()) {
         output += `  📝 ${task.note.trim()}\n`;
     }
-    // 标签
+    // Tags
     if (task.tags && task.tags.length > 0) {
         const tagNames = task.tags.map((tag) => tag.name).join(', ');
         output += `  🏷 ${tagNames}\n`;
     }
     return output;
 }
-// 获取状态对应的emoji
+// Map status to emoji
 function getStatusEmoji(status) {
     const statusMap = {
         'Available': '⚪',
