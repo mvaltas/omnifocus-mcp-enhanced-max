@@ -1,3 +1,6 @@
+**This is a fork of the original omnifocus-mcp-enhanced, it has a couple of fixes and tunnings for my personal use. Go to the original repository for an up to date version of this MCP**
+
+
 # 🚀 OmniFocus MCP Enhanced
 
 [![npm version](https://img.shields.io/npm/v/omnifocus-mcp-enhanced.svg)](https://www.npmjs.com/package/omnifocus-mcp-enhanced)
