@@ -106,12 +106,13 @@ describe('generateAppleScript', () => {
   it('should escape special characters in task name', () => {
     const script = generateAppleScript({ name: `Task with "quotes" and 'apostrophes'` });
     expect(script).toContain('\\"quotes\\"');
-    expect(script).toContain("\\'apostrophes\\'");
+    // Apostrophes pass through unescaped (safe inside double-quoted strings).
+    expect(script).toContain("'apostrophes'");
   });
 
   it('should escape special characters in project name', () => {
     const script = generateAppleScript({ name: 'Task', projectName: `John's "Special" Project` });
-    expect(script).toContain("John\\'s");
+    expect(script).toContain("John's");
     expect(script).toContain('\\"Special\\"');
   });
 

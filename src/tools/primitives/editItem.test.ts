@@ -14,9 +14,20 @@ describe('generateAppleScript (editItem)', () => {
     expect(script).toContain('flattened task where id = "abc-123"');
   });
 
-  it('should search by name when only name is provided', () => {
+  it('should search by name when only name is provided, preferring non-inbox tasks', () => {
     const script = generateAppleScript({ name: 'My Task', itemType: 'task' });
-    expect(script).toContain('flattened task where name = "My Task"');
+    expect(script).toContain('flattened task where (name = "My Task" and in inbox is false)');
+    // Falls back to searching all tasks including inbox
+    expect(script).toContain('first flattened task where name = "My Task"');
+  });
+
+  it('should emit whitespace-tolerant fallbacks for name lookup', () => {
+    const script = generateAppleScript({ name: 'My Task', itemType: 'task' });
+    // Trailing-space variant catches the common OF case where the task name
+    // got stored with a stray trailing space.
+    expect(script).toContain('flattened task where name = "My Task "');
+    // Trim-tolerant scan handles arbitrary trailing whitespace.
+    expect(script).toContain('every flattened task where name starts with "My Task"');
   });
 
   it('should use flattened project for project type', () => {
@@ -67,7 +78,7 @@ describe('generateAppleScript (editItem)', () => {
 
   it('should mark task as completed', () => {
     const script = generateAppleScript({ id: 'abc', itemType: 'task', newStatus: 'completed' });
-    expect(script).toContain('set completed of foundItem to true');
+    expect(script).toContain('mark complete foundItem');
   });
 
   it('should mark task as dropped', () => {
@@ -77,14 +88,24 @@ describe('generateAppleScript (editItem)', () => {
 
   it('should mark task as incomplete', () => {
     const script = generateAppleScript({ id: 'abc', itemType: 'task', newStatus: 'incomplete' });
-    expect(script).toContain('set completed of foundItem to false');
-    expect(script).toContain('set dropped of foundItem to false');
+    expect(script).toContain('mark incomplete foundItem');
   });
 
   it('should move task to a new project', () => {
     const script = generateAppleScript({ id: 'abc', itemType: 'task', newProjectName: 'Work' });
     expect(script).toContain('flattened project where name = "Work"');
     expect(script).toContain('move foundItem to end of tasks of destProject');
+  });
+
+  it('should move task to top of its containing project', () => {
+    const script = generateAppleScript({ id: 'abc', itemType: 'task', newPositionInProject: 'top' });
+    expect(script).toContain('set itemProject to containing project of foundItem');
+    expect(script).toContain('move foundItem to beginning of tasks of itemProject');
+  });
+
+  it('should move task to bottom of its containing project', () => {
+    const script = generateAppleScript({ id: 'abc', itemType: 'task', newPositionInProject: 'bottom' });
+    expect(script).toContain('move foundItem to end of tasks of itemProject');
   });
 
   it('should replace all tags', () => {

@@ -1,4 +1,4 @@
-import { executeAppleScript, escapeAppleScript } from '../../utils/scriptExecution.js';
+import { executeAppleScript, escapeAppleScript, appleScriptFindByName } from '../../utils/scriptExecution.js';
 
 // Interface for item removal parameters
 export interface RemoveItemParams {
@@ -40,20 +40,17 @@ export function generateAppleScript(params: RemoveItemParams): string {
   }
 
   // Add name search if provided (and no ID or as fallback)
+  const selector = itemType === 'task' ? 'flattened task' : 'flattened project';
   if (!id && name) {
     script += `
-        -- Find by name
-        try
-          set foundItem to first ${itemType === 'task' ? 'flattened task' : 'flattened project'} where name = "${name}"
-        end try
+        -- Find by name (whitespace-tolerant)
+${appleScriptFindByName(selector, name)}
 `;
   } else if (id && name) {
     script += `
-        -- If ID search failed, try to find by name as fallback
+        -- If ID search failed, try to find by name as fallback (whitespace-tolerant)
         if foundItem is missing value then
-          try
-            set foundItem to first ${itemType === 'task' ? 'flattened task' : 'flattened project'} where name = "${name}"
-          end try
+${appleScriptFindByName(selector, name)}
         end if
 `;
   }

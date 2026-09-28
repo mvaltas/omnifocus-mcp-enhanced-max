@@ -26,21 +26,50 @@ export function formatDateForAppleScript(isoDate: string, varName: string = 'tem
 		throw new Error('Date string cannot be empty');
 	}
 
-	// Parse the ISO date string
-	const date = new Date(isoDate);
+	const trimmed = isoDate.trim();
 
-	// Check if the date is valid
-	if (isNaN(date.getTime())) {
-		throw new Error(`Invalid date string: ${isoDate}`);
+	let year: number;
+	let month: number;
+	let day: number;
+	let hours: number;
+	let minutes: number;
+	let seconds: number;
+
+	// Date-only strings like "2026-06-01" must be interpreted as local midnight,
+	// not UTC midnight. `new Date("2026-06-01")` parses to UTC, which means in
+	// PT (UTC-7/-8) the local components resolve to the PREVIOUS day. That
+	// off-by-one is silent and frequent: a user passing dueDate "2026-06-01"
+	// would see the task land on 5/31 in OmniFocus. We parse the components
+	// directly so the resulting AppleScript date is local midnight of the
+	// requested day, with no timezone shift.
+	const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+	if (dateOnlyMatch) {
+		// For date-only inputs we keep the user's components verbatim and let
+		// AppleScript handle any roll-over (matching the existing behaviour for
+		// `2026-02-29` style inputs in the time-component branch below).
+		year = Number(dateOnlyMatch[1]);
+		month = Number(dateOnlyMatch[2]);
+		day = Number(dateOnlyMatch[3]);
+		hours = 0;
+		minutes = 0;
+		seconds = 0;
+	} else {
+		// Parse the ISO date string (with time component) — `new Date` is the
+		// right choice here; the timezone is either explicit in the string or
+		// the user's locale, and we read components in local time below.
+		const date = new Date(trimmed);
+
+		if (isNaN(date.getTime())) {
+			throw new Error(`Invalid date string: ${isoDate}`);
+		}
+
+		year = date.getFullYear();
+		month = date.getMonth() + 1; // JavaScript months are 0-indexed, AppleScript is 1-indexed
+		day = date.getDate();
+		hours = date.getHours();
+		minutes = date.getMinutes();
+		seconds = date.getSeconds();
 	}
-
-	// Extract date components
-	const year = date.getFullYear();
-	const month = date.getMonth() + 1; // JavaScript months are 0-indexed, AppleScript is 1-indexed
-	const day = date.getDate();
-	const hours = date.getHours();
-	const minutes = date.getMinutes();
-	const seconds = date.getSeconds();
 
 	// Calculate time in seconds since midnight for AppleScript's time property
 	const timeInSeconds = hours * 3600 + minutes * 60 + seconds;

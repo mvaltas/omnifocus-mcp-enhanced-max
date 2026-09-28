@@ -35,12 +35,15 @@ export async function handler(args: z.infer<typeof schema>, extra: RequestHandle
   }
 }
 
-// Function to format date in compact format (M/D)
+// Function to format date in compact format (YYYY-MM-DD)
 function formatCompactDate(isoDate: string | null): string {
   if (!isoDate) return '';
-  
+
   const date = new Date(isoDate);
-  return `${date.getMonth() + 1}/${date.getDate()}`;
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 // Function to format the database in the compact report format

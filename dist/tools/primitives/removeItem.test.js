@@ -39,7 +39,10 @@ describe('generateAppleScript (removeItem)', () => {
     });
     it('should escape special characters in name', () => {
         const script = generateAppleScript({ name: `Task's "Name"`, itemType: 'task' });
-        expect(script).toContain("\\'s");
+        // Apostrophes are safe inside double-quoted AppleScript strings and are
+        // intentionally NOT escaped (escaping them used to leave stray backslashes
+        // in stored values).
+        expect(script).toContain("Task's");
         expect(script).toContain('\\"Name\\"');
     });
     it('should handle item not found with an error response', () => {

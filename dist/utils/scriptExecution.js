@@ -8,10 +8,84 @@ import { dirname } from 'path';
 import { existsSync } from 'fs';
 const execAsync = promisify(exec);
 /**
- * Escape a string for safe use inside AppleScript string literals
+ * Escape a string for safe use inside AppleScript string literals.
+ *
+ * AppleScript double-quoted strings recognise the following escape sequences:
+ *   \\ (backslash), \" (double quote), \n (newline), \r (return), \t (tab).
+ * Single quotes/apostrophes do NOT need escaping inside double-quoted strings —
+ * escaping them with `\'` is not a valid AppleScript escape and can leave a
+ * stray backslash in the stored value (or cause parser errors in some
+ * contexts).
+ *
+ * Backslash MUST be escaped first so we don't double-escape the backslashes
+ * introduced for the other escapes.
  */
 export function escapeAppleScript(str) {
-    return str.replace(/['"\\]/g, '\\$&');
+    return str
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/\t/g, '\\t');
+}
+/**
+ * Generate AppleScript that performs a whitespace-tolerant lookup of an item
+ * by name, setting `foundItem` to the matched item (or leaving it as
+ * `missing value` if no match is found).
+ *
+ * Pre-condition: the caller must have already set `foundItem to missing value`.
+ *
+ * Strategy (in order, stops at first match):
+ *   1. Exact match: `whose name = "X"`
+ *   2. Trailing-space variant: `whose name = "X "` — OmniFocus task names are
+ *      surprisingly often stored with a trailing space; this catches that case
+ *      with a cheap second query rather than a full scan.
+ *   3. Trim-tolerant scan: iterate items whose name begins with the search
+ *      string, strip trailing whitespace from each, and compare. This handles
+ *      multiple trailing spaces, trailing tabs, etc.
+ *
+ * @param selector     AppleScript element selector, e.g. 'flattened task' or 'flattened project'
+ * @param escapedName  The name to search for, already escaped via escapeAppleScript
+ * @param extraWhere   Optional additional condition for the `whose` clause,
+ *                     e.g. 'in inbox is false'
+ */
+export function appleScriptFindByName(selector, escapedName, extraWhere) {
+    const exactWhere = extraWhere
+        ? `(name = "${escapedName}" and ${extraWhere})`
+        : `name = "${escapedName}"`;
+    const trailingWhere = extraWhere
+        ? `(name = "${escapedName} " and ${extraWhere})`
+        : `name = "${escapedName} "`;
+    const prefixWhere = extraWhere
+        ? `(name starts with "${escapedName}" and ${extraWhere})`
+        : `name starts with "${escapedName}"`;
+    return `
+        -- Whitespace-tolerant name lookup
+        try
+          set foundItem to first ${selector} where ${exactWhere}
+        end try
+        if foundItem is missing value then
+          try
+            set foundItem to first ${selector} where ${trailingWhere}
+          end try
+        end if
+        if foundItem is missing value then
+          try
+            set candidates to every ${selector} where ${prefixWhere}
+            repeat with candidate in candidates
+              set candidateName to name of candidate as text
+              set trimmedName to candidateName
+              repeat while (length of trimmedName) > 0 and (trimmedName ends with " " or trimmedName ends with tab)
+                set trimmedName to text 1 thru ((length of trimmedName) - 1) of trimmedName
+              end repeat
+              if trimmedName is "${escapedName}" then
+                set foundItem to candidate
+                exit repeat
+              end if
+            end repeat
+          end try
+        end if
+`;
 }
 /**
  * Safely execute AppleScript by writing to a temp file

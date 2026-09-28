@@ -1,21 +1,32 @@
-import { executeAppleScript } from '../../utils/scriptExecution.js';
+import { executeAppleScript, escapeAppleScript, appleScriptFindByName } from '../../utils/scriptExecution.js';
 /**
  * Generate AppleScript to get task information by ID or name
  */
 function generateGetTaskScript(params) {
-    const taskId = params.taskId?.replace(/['"\\]/g, '\\$&') || '';
-    const taskName = params.taskName?.replace(/['"\\]/g, '\\$&') || '';
+    const taskId = params.taskId ? escapeAppleScript(params.taskId) : '';
+    const taskName = params.taskName ? escapeAppleScript(params.taskName) : '';
     let script = `
   try
     tell application "OmniFocus"
       tell front document
-        -- Find task by ID or name
+        -- Find task by ID or name (whitespace-tolerant when looking up by name)
+        set theTask to missing value
+        set foundItem to missing value
         if "${taskId}" is not "" then
-          set theTask to first flattened task where id = "${taskId}"
+          try
+            set theTask to first flattened task where id = "${taskId}"
+          end try
         else if "${taskName}" is not "" then
-          set theTask to first flattened task where name = "${taskName}"
+${appleScriptFindByName('flattened task', taskName)}
+          if foundItem is not missing value then
+            set theTask to foundItem
+          end if
         else
           return "{\\\"success\\\":false,\\\"error\\\":\\\"Either taskId or taskName must be provided\\\"}"
+        end if
+
+        if theTask is missing value then
+          return "{\\\"success\\\":false,\\\"error\\\":\\\"Task not found\\\"}"
         end if
         
         -- Get task information

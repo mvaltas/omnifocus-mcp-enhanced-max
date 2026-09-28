@@ -1,4 +1,4 @@
-import { executeAppleScript, escapeAppleScript } from '../../utils/scriptExecution.js';
+import { executeAppleScript, escapeAppleScript, appleScriptFindByName } from '../../utils/scriptExecution.js';
 import { formatDateForAppleScript } from '../../utils/dateFormatter.js';
 
 // Status options for tasks and projects
@@ -30,6 +30,9 @@ export interface EditItemParams {
   newSequential?: boolean;      // Whether the project should be sequential
   newFolderName?: string;       // New folder to move the project to
   newProjectStatus?: ProjectStatus; // New status for projects
+
+  // Position-within-project (task only)
+  newPositionInProject?: 'top' | 'bottom'; // Move the task to top or bottom of its containing project's task list
 }
 
 /**
@@ -78,22 +81,43 @@ export function generateAppleScript(params: EditItemParams): string {
   }
 
   // Add name search if provided (and no ID or as fallback)
+  // Both branches use whitespace-tolerant lookup. For tasks, we look in
+  // non-inbox tasks first (matching the previous behaviour of preferring
+  // project tasks over inbox tasks), then fall back to the full pool.
   if (!id && name) {
-    script += `
-        -- Find by name
-        try
-          set foundItem to first ${itemType === 'task' ? 'flattened task' : 'flattened project'} where name = "${name}"
-        end try
-`;
-  } else if (id && name) {
-    script += `
-        -- If ID search failed, try to find by name as fallback
+    if (itemType === 'task') {
+      script += `
+        -- Find by name (whitespace-tolerant; prefer project tasks over inbox)
+${appleScriptFindByName('flattened task', name, 'in inbox is false')}
         if foundItem is missing value then
-          try
-            set foundItem to first ${itemType === 'task' ? 'flattened task' : 'flattened project'} where name = "${name}"
-          end try
+${appleScriptFindByName('flattened task', name)}
         end if
 `;
+    } else {
+      script += `
+        -- Find by name (whitespace-tolerant)
+${appleScriptFindByName('flattened project', name)}
+`;
+    }
+  } else if (id && name) {
+    if (itemType === 'task') {
+      script += `
+        -- If ID search failed, fall back to whitespace-tolerant name lookup
+        if foundItem is missing value then
+${appleScriptFindByName('flattened task', name, 'in inbox is false')}
+          if foundItem is missing value then
+${appleScriptFindByName('flattened task', name)}
+          end if
+        end if
+`;
+    } else {
+      script += `
+        -- If ID search failed, fall back to whitespace-tolerant name lookup
+        if foundItem is missing value then
+${appleScriptFindByName('flattened project', name)}
+        end if
+`;
+    }
   }
 
   // Add the item editing logic
@@ -176,8 +200,8 @@ export function generateAppleScript(params: EditItemParams): string {
     if (params.newStatus !== undefined) {
       if (params.newStatus === 'completed') {
         script += `
-          -- Mark task as completed
-          set completed of foundItem to true
+          -- Mark task as completed (mark complete works for both inbox and project tasks)
+          mark complete foundItem
           set end of changedProperties to "status (completed)"
 `;
       } else if (params.newStatus === 'dropped') {
@@ -188,9 +212,8 @@ export function generateAppleScript(params: EditItemParams): string {
 `;
       } else if (params.newStatus === 'incomplete') {
         script += `
-          -- Mark task as incomplete
-          set completed of foundItem to false
-          set dropped of foundItem to false
+          -- Mark task as incomplete (mark incomplete works for both inbox and project tasks)
+          mark incomplete foundItem
           set end of changedProperties to "status (incomplete)"
 `;
       }
@@ -213,6 +236,25 @@ export function generateAppleScript(params: EditItemParams): string {
             -- Project not found error
             return "{\\\"success\\\":false,\\\"error\\\":\\\"Project not found: ${projectName}\\\"}"
           end if
+`;
+    }
+
+    // Move within containing project (top/bottom). Useful for the MIT
+    // convention where the day's most-important task lives at the top of its
+    // project's task list. Operates on the task's `containing project`, which
+    // for a subtask is the top-level project — moving a subtask this way will
+    // also promote it out of its parent task.
+    if (params.newPositionInProject !== undefined) {
+      const placement = params.newPositionInProject === 'top' ? 'beginning' : 'end';
+      script += `
+          -- Move task to ${params.newPositionInProject} of its containing project
+          try
+            set itemProject to containing project of foundItem
+            if itemProject is not missing value then
+              move foundItem to ${placement} of tasks of itemProject
+              set end of changedProperties to "position (${params.newPositionInProject} of project)"
+            end if
+          end try
 `;
     }
 

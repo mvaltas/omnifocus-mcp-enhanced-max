@@ -1,4 +1,4 @@
-import { executeAppleScript, escapeAppleScript } from '../../utils/scriptExecution.js';
+import { executeAppleScript, escapeAppleScript, appleScriptFindByName } from '../../utils/scriptExecution.js';
 import { formatDateForAppleScript } from '../../utils/dateFormatter.js';
 /**
  * Generate pure AppleScript for task creation
@@ -38,13 +38,14 @@ export function generateAppleScript(params) {
             return "{\\\"success\\\":false,\\\"error\\\":\\\"Parent task not found with ID: ${parentTaskId}\\\"}"
           end try
         else if "${parentTaskName}" is not "" then
-          -- Create subtask using parent task name
-          try
-            set theParentTask to first flattened task where name = "${parentTaskName}"
-            set newTask to make new task with properties {name:"${name}"} at end of tasks of theParentTask
-          on error
+          -- Create subtask using parent task name (whitespace-tolerant lookup)
+          set foundItem to missing value
+${appleScriptFindByName('flattened task', parentTaskName)}
+          if foundItem is missing value then
             return "{\\\"success\\\":false,\\\"error\\\":\\\"Parent task not found with name: ${parentTaskName}\\\"}"
-          end try
+          end if
+          set theParentTask to foundItem
+          set newTask to make new task with properties {name:"${name}"} at end of tasks of theParentTask
         else if "${projectName}" is not "" then
           -- Use specified project
           try

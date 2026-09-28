@@ -20,7 +20,9 @@ export const schema = z.object({
     // Project-specific fields
     newSequential: z.boolean().optional().describe("Whether the project should be sequential"),
     newFolderName: z.string().optional().describe("New folder to move the project to"),
-    newProjectStatus: z.enum(['active', 'completed', 'dropped', 'onHold']).optional().describe("New status for projects")
+    newProjectStatus: z.enum(['active', 'completed', 'dropped', 'onHold']).optional().describe("New status for projects"),
+    // Position within containing project (task only)
+    newPositionInProject: z.enum(['top', 'bottom']).optional().describe("For tasks: move the task to the top or bottom of its containing project's task list. Use 'top' to designate the day's MIT (most-important-task convention). Operates on the containing project; for a subtask this moves it out of its parent.")
 });
 export async function handler(args, extra) {
     try {

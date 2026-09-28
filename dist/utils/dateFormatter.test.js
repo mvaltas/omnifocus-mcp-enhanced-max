@@ -59,8 +59,31 @@ describe('formatDateForAppleScript', () => {
         it('should throw error for invalid date string', () => {
             expect(() => formatDateForAppleScript('not-a-date')).toThrow('Invalid date string');
         });
-        it('should throw error for malformed ISO date', () => {
-            expect(() => formatDateForAppleScript('2026-13-45')).toThrow('Invalid date string');
+    });
+    describe('date-only inputs (no timezone shift)', () => {
+        // Date-only inputs like "2026-06-01" must resolve to local midnight on
+        // the requested day. `new Date("2026-06-01")` would parse as UTC midnight,
+        // which in negative-offset timezones (e.g. PT) lands on the PREVIOUS day
+        // when read with `getDate()`. The formatter parses the components directly
+        // to avoid that off-by-one.
+        it('should treat "2026-06-01" as local June 1 regardless of timezone', () => {
+            const result = formatDateForAppleScript('2026-06-01');
+            expect(result).toContain('set year of tempDate to 2026');
+            expect(result).toContain('set month of tempDate to 6');
+            expect(result).toContain('set day of tempDate to 1');
+            expect(result).toContain('set time of tempDate to 0');
+        });
+        it('should treat "2026-01-01" as January 1, not December 31 of the prior year', () => {
+            const result = formatDateForAppleScript('2026-01-01');
+            expect(result).toContain('set year of tempDate to 2026');
+            expect(result).toContain('set month of tempDate to 1');
+            expect(result).toContain('set day of tempDate to 1');
+        });
+        it('should tolerate surrounding whitespace on date-only input', () => {
+            const result = formatDateForAppleScript('  2026-06-01  ');
+            expect(result).toContain('set year of tempDate to 2026');
+            expect(result).toContain('set month of tempDate to 6');
+            expect(result).toContain('set day of tempDate to 1');
         });
     });
     describe('time calculations', () => {
