@@ -50,8 +50,9 @@ function formatCompactReport(database, options) {
     // Add legend
     output += `FORMAT LEGEND:
 F: Folder | P: Project | •: Task | 🚩: Flagged
-Dates: [M/D] | Duration: (30m) or (2h) | Tags: <tag1,tag2>
-Status: #next #avail #block #due #over #compl #drop\n\n`;
+Dates: [DUE:d] [defer:d] [plan:d] | Duration: (30m) or (2h) | Tags: <tag1,tag2>
+Status: #next #avail #block #due #over #compl #drop
+Project flags: [NO-NEXT] no next action (open loop) | [REVIEW-DUE:d] review overdue\n\n`;
     // Map of folder IDs to folder objects for quick lookup
     const folderMap = new Map();
     Object.values(database.folders).forEach((folder) => {
@@ -116,6 +117,16 @@ Status: #next #avail #block #due #over #compl #drop\n\n`;
             const dueDateStr = formatCompactDate(project.dueDate);
             statusInfo += statusInfo ? ` [DUE:${dueDateStr}]` : ` [DUE:${dueDateStr}]`;
         }
+        // An active project with no designated next action is an open loop:
+        // something unresolved with no way to move it forward. Surface it, since
+        // it is the thing a review is looking for and is otherwise invisible.
+        if (project.status === 'Active' && !project.nextTaskID) {
+            statusInfo += ' [NO-NEXT]';
+        }
+        // Flag a review that is already due, so stale projects stand out.
+        if (project.nextReviewDate && new Date(project.nextReviewDate) <= today) {
+            statusInfo += ` [REVIEW-DUE:${formatCompactDate(project.nextReviewDate)}]`;
+        }
         // Add flag if present
         const flaggedSymbol = project.flagged ? ' 🚩' : '';
         let projectOutput = `${indent}P: ${project.name}${flaggedSymbol}${statusInfo}\n`;
@@ -146,6 +157,9 @@ Status: #next #avail #block #due #over #compl #drop\n\n`;
         if (task.deferDate) {
             const deferDateStr = formatCompactDate(task.deferDate);
             dateInfo += ` [defer:${deferDateStr}]`;
+        }
+        if (task.plannedDate) {
+            dateInfo += ` [plan:${formatCompactDate(task.plannedDate)}]`;
         }
         // Format duration
         let durationStr = '';

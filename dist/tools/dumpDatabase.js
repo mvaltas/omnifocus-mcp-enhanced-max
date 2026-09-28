@@ -38,8 +38,10 @@ export async function dumpDatabase() {
                     note: String(task.note || ""),
                     flagged: Boolean(task.flagged),
                     completed: task.taskStatus === "Completed",
-                    completionDate: null, // Not available in the new format
-                    dropDate: null, // Not available in the new format
+                    completionDate: task.completionDate ?? null,
+                    dropDate: task.dropDate ?? null,
+                    plannedDate: task.plannedDate ?? null,
+                    added: task.added ?? null,
                     taskStatus: String(task.taskStatus),
                     active: task.taskStatus !== "Completed" && task.taskStatus !== "Dropped",
                     dueDate: task.dueDate,
@@ -82,7 +84,15 @@ export async function dumpDatabase() {
                     note: String(project.note || ""),
                     tasks: project.tasks || [],
                     flagged: false, // Default value
-                    estimatedMinutes: null // Default value
+                    estimatedMinutes: null, // Default value
+                    plannedDate: project.plannedDate ?? null,
+                    completionDate: project.completionDate ?? null,
+                    dropDate: project.dropDate ?? null,
+                    nextTaskID: project.nextTaskID ?? null,
+                    nextTaskName: project.nextTaskName ?? null,
+                    lastReviewDate: project.lastReviewDate ?? null,
+                    nextReviewDate: project.nextReviewDate ?? null,
+                    reviewInterval: project.reviewInterval ?? null
                 };
             }
         }

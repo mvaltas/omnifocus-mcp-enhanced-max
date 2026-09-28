@@ -8,6 +8,8 @@ export interface OmnifocusTask {
     completed: boolean;
     completionDate: string | null;
     dropDate: string | null;
+    plannedDate: string | null;
+    added: string | null;
     taskStatus: string; // One of Task.Status values
     active: boolean;
     
@@ -69,6 +71,15 @@ export interface OmnifocusProject {
   tasks: string[]; // Task IDs
   flagged?: boolean;
   estimatedMinutes?: number | null;
+  plannedDate: string | null;
+  completionDate: string | null;
+  dropDate: string | null;
+  /** The project's designated next action. Null on an active project means an open loop. */
+  nextTaskID: string | null;
+  nextTaskName: string | null;
+  lastReviewDate: string | null;
+  nextReviewDate: string | null;
+  reviewInterval: { steps: number; unit: string } | null;
 }
 
 export interface OmnifocusFolder {

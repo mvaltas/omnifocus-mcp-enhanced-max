@@ -8,6 +8,13 @@
           if (!date) return null;
           return date.toISOString();
         }
+
+        // Project.ReviewInterval is an object with `steps` and `unit`; it has
+        // no useful string form ("[object Project.ReviewInterval]").
+        function formatReviewInterval(interval) {
+          if (!interval) return null;
+          return { steps: interval.steps, unit: interval.unit };
+        }
     
         // Helper function to safely get enum values - Simplified with direct mapping
         const taskStatusMap = {
@@ -92,6 +99,16 @@
               effectiveDeferDate: formatDate(project.effectiveDeferDate),
               dueDate: formatDate(project.dueDate),
               deferDate: formatDate(project.deferDate),
+              plannedDate: formatDate(project.plannedDate),
+              completionDate: formatDate(project.completionDate),
+              dropDate: formatDate(project.dropDate),
+              // The project's designated next action. A null here on an active
+              // project is an open loop: a project with nothing to do next.
+              nextTaskID: project.nextTask ? project.nextTask.id.primaryKey : null,
+              nextTaskName: project.nextTask ? project.nextTask.name : null,
+              lastReviewDate: formatDate(project.lastReviewDate),
+              nextReviewDate: formatDate(project.nextReviewDate),
+              reviewInterval: formatReviewInterval(project.reviewInterval),
               completedByChildren: project.completedByChildren,
               containsSingletonActions: project.containsSingletonActions,
               note: project.note || "",
@@ -182,6 +199,10 @@
                 deferDate: formatDate(task.deferDate),
                 effectiveDueDate: formatDate(task.effectiveDueDate),
                 effectiveDeferDate: formatDate(task.effectiveDeferDate),
+                plannedDate: formatDate(task.plannedDate),
+                completionDate: formatDate(task.completionDate),
+                dropDate: formatDate(task.dropDate),
+                added: formatDate(task.added),
                 estimatedMinutes: task.estimatedMinutes,
                 completedByChildren: task.completedByChildren,
                 sequential: task.sequential || false,
