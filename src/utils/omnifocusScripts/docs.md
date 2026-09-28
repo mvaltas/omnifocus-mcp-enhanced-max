@@ -17,9 +17,9 @@ Tools in @/src/tools/primitives invoke these scripts via `executeOmniFocusScript
 - `listCustomPerspectives.js` - Lists all custom perspectives using `Perspective.Custom.all`
 - `getCustomPerspectiveTasks.js` - Switches to a custom perspective and traverses the content tree to collect tasks with hierarchical relationships
 - `omnifocusDump.js` - Full database export of all tasks, projects, folders, and tags
-- `filterTasks.js`, `filterTasksFixed.js`, `filterTasks_simple.js` - Filter tasks based on various criteria
+- `filterTasks.js` - Filter tasks based on various criteria
 - `getNextFromInbox.js` - Returns the oldest active task from the inbox (tasks without Completed/Dropped status and with an added date), or null if inbox is empty. Sorts by `added` date ascending to find the first/oldest item.
-- `todayCompletedTasks.js`, `yesterdayCompletedTasks.js` - Retrieve completed tasks within time ranges
+- `todayCompletedTasks.js` - Retrieve completed tasks within time ranges
 - `forecastTasks.js` - Retrieve tasks from the forecast view (due/deferred)
 - `flaggedTasks.js`, `inboxTasks.js`, `tasksByTag.js` - Query specific task collections
 
@@ -38,7 +38,6 @@ Custom perspective scripts use `Perspective.Custom.byName()` and then set `docum
 `getCustomPerspectiveTasks.js` uses a recursive `collectTasks()` function that traverses the perspective's content tree, building a `taskMap` where each task includes a `parent` field and `children` array, preserving the task hierarchy as displayed in the perspective.
 
 **Script Variants:**
-Multiple versions of `filterTasks` exist (`filterTasks.js`, `filterTasksFixed.js`, `filterTasks_simple.js`, `filterTasksDebug.js`) suggesting iterative development to handle OmniFocus API quirks. The "Fixed" and "Debug" variants likely address specific edge cases or provide additional logging.
 
 **Error Handling:**
 All scripts wrap execution in try-catch blocks and return JSON objects with `success` and `error` fields for consistent error propagation back to TypeScript.
