@@ -7,7 +7,7 @@ Core utilities for script execution, date formatting, and the perspective engine
 
 ### How it fits into the larger codebase
 
-This folder provides the execution layer between the MCP server and OmniFocus. Tools in @/src/tools/primitives call `executeAppleScript()` or `executeOmniFocusScript()` to run scripts that manipulate OmniFocus data. The perspective engine (@/src/utils/perspectiveEngine.ts) provides programmatic perspective filtering, while date utilities ensure correct date format conversions between ISO 8601 and AppleScript's expected format.
+This folder provides the execution layer between the MCP server and OmniFocus. Tools in @/src/tools/primitives call `executeAppleScript()` or `executeOmniFocusScript()` to run scripts that manipulate OmniFocus data, while date utilities ensure correct date format conversions between ISO 8601 and AppleScript's expected format.
 
 Scripts in @/src/utils/omnifocusScripts are loaded and executed by the functions in this folder, with parameter injection handled by `executeOmniFocusScript()`.
 
@@ -27,8 +27,6 @@ Generates locale-independent AppleScript code to construct dates from ISO date s
 **dateFormatter.test.ts:**
 Comprehensive test suite (14 tests) verifying dateFormatter behavior across multiple scenarios: basic date formatting, custom variable names, error handling (empty/invalid dates), time calculations (midnight, noon, arbitrary times), and output format validation. Tests use explicit ISO datetime strings with timezone information to ensure consistent behavior. All tests focus on behavior (does it generate correct AppleScript?) rather than implementation details (how does it parse dates internally). This test suite establishes the testing pattern for utility functions in the codebase.
 
-**perspectiveEngine.ts:**
-Implements a `PerspectiveEngine` class that filters tasks based on OmniFocus 4.2+ perspective rules. The engine defines `PerspectiveRule` interfaces matching OmniFocus's rule types (availability, status, tags, dates, projects). The `getFilteredTasks()` method queries OmniFocus perspectives, applies additional filtering (hide completed, limit), and returns structured task results with perspective metadata.
 
 ### Things to Know
 
@@ -45,7 +43,6 @@ All script execution writes to temp files in `tmpdir()` rather than passing scri
 When embedding OmniJS scripts in JXA wrappers, `executeOmniFocusScript()` performs escaping on backslashes, backticks, and dollar signs to prevent template literal interpretation issues in the `evaluateJavascript()` call.
 
 **Perspective Engine Limitations:**
-The `PerspectiveEngine` includes Chinese comments indicating it's designed for OmniFocus 4.2+ APIs but implements a simplified filtering layer. The `getTasksFromPerspective()` method includes hardcoded logic for specific perspective names (e.g., "今日复盘" for completed tasks) suggesting incomplete generalization of the perspective rule system.
 
 **Script Path Resolution:**
 `executeOmniFocusScript()` checks multiple paths (dist, src, relative) to locate scripts, enabling the code to work both in development and after TypeScript compilation.

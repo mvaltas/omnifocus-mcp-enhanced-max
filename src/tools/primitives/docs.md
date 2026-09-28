@@ -33,7 +33,6 @@ The separation between primitives and definitions enables the business logic to 
 - `filterTasks.ts` - Advanced filtering supporting multiple criteria (status, dates, projects, tags, search text)
 
 **Perspective Operations:**
-- `getPerspectiveTasksV2.ts` - Interface for querying built-in perspectives (unused in current server setup)
 - `getCustomPerspectiveTasks.ts` - Executes @/src/utils/omnifocusScripts/getCustomPerspectiveTasks.js to retrieve tasks from custom perspectives with hierarchical structure
 - `listCustomPerspectives.ts` - Executes @/src/utils/omnifocusScripts/listCustomPerspectives.js to list available custom perspectives
 

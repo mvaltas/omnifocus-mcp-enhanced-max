@@ -1,8 +1,16 @@
 // Get tasks from a custom perspective by name (supports hierarchy)
 (() => {
+  // Declared outside the `try` so the `catch` and `finally` blocks can see them.
+  // `perspectiveName` used to be a `const` inside the `try`, which made the
+  // `catch` block's reference to it throw a ReferenceError and swallow the
+  // real error.
+  let perspectiveName = null;
+  let windowToRestore = null;
+  let previousPerspective = null;
+
   try {
     // Get injected parameters
-    const perspectiveName = injectedArgs && injectedArgs.perspectiveName ? injectedArgs.perspectiveName : null;
+    perspectiveName = injectedArgs && injectedArgs.perspectiveName ? injectedArgs.perspectiveName : null;
 
     if (!perspectiveName) {
       throw new Error("Perspective name is required");
@@ -25,8 +33,14 @@
       throw new Error(`No custom perspective found with name "${perspectiveName}"`);
     }
 
-    // Switch to the perspective
-    document.windows[0].perspective = perspective;
+    // Reading the content tree requires a window that is actually displaying
+    // the perspective, so we have to switch the front window. Remember what it
+    // was showing first and put it back in `finally` — silently leaving the
+    // user's window on a different perspective is a side effect they did not
+    // ask for.
+    windowToRestore = document.windows[0];
+    previousPerspective = windowToRestore.perspective;
+    windowToRestore.perspective = perspective;
 
     // Map of all tasks keyed by ID (supports hierarchy)
     let taskMap = {};
@@ -52,7 +66,7 @@
           estimatedMinutes: t.estimatedMinutes || null,
           repetitionRule: t.repetitionRule ? t.repetitionRule.toString() : null,
           creationDate: t.added ? t.added.toISOString() : null,
-          completionDate: t.completedDate ? t.completedDate.toISOString() : null,
+          completionDate: t.completionDate ? t.completionDate.toISOString() : null,
           parent: parentId,   // Parent task ID
           children: [],       // Child task IDs (populated below)
         };
@@ -101,5 +115,14 @@
     };
 
     return JSON.stringify(errorResult);
+  } finally {
+    // Restore the window even when collection threw part-way through.
+    if (windowToRestore && previousPerspective) {
+      try {
+        windowToRestore.perspective = previousPerspective;
+      } catch (restoreError) {
+        // Nothing useful to do here; never mask the real result.
+      }
+    }
   }
 })();

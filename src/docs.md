@@ -66,6 +66,6 @@ The codebase uses Vitest for automated testing of pure utility functions and bus
 All tool handlers are async functions that await script execution. The server uses promisified child_process.exec for running osascript commands, with temp file management for script content.
 
 **Version Support:**
-Comments in perspectiveEngine.ts indicate support for OmniFocus 4.2+ APIs, particularly for custom perspective access. The server works on macOS only (specified in package.json `os: ["darwin"]`).
+Custom perspective access uses the OmniFocus 4.2+ Omni Automation API (`Perspective.Custom`). The server works on macOS only (specified in package.json `os: ["darwin"]`).
 
 Created and maintained by Nori.
