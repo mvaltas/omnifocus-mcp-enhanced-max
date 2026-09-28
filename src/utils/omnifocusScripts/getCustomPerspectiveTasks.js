@@ -61,6 +61,7 @@
           tags: t.tags ? t.tags.map(tag => getTagPath(tag)) : [],
           dueDate: t.dueDate ? t.dueDate.toISOString() : null,
           deferDate: t.deferDate ? t.deferDate.toISOString() : null,
+          plannedDate: t.plannedDate ? t.plannedDate.toISOString() : null,
           completed: t.completed,
           flagged: t.flagged,
           estimatedMinutes: t.estimatedMinutes || null,

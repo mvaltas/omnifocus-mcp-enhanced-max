@@ -77,6 +77,7 @@
       flagged: oldestTask.flagged,
       dueDate: formatDate(oldestTask.dueDate),
       deferDate: formatDate(oldestTask.deferDate),
+      plannedDate: formatDate(oldestTask.plannedDate),
       added: formatDate(oldestTask.added),
       modified: formatDate(oldestTask.modified),
       estimatedMinutes: oldestTask.estimatedMinutes,

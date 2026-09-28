@@ -70,6 +70,17 @@ describe('generateAppleScript', () => {
     expect(script).toContain('set dueDateVar to current date');
   });
 
+  it('should set planned date when provided', () => {
+    const script = generateAppleScript({ name: 'Task', plannedDate: '2026-03-15T00:00:00' });
+    expect(script).toContain('set planned date of newTask to plannedDateVar');
+    expect(script).toContain('set plannedDateVar to current date');
+  });
+
+  it('should not set planned date when omitted', () => {
+    const script = generateAppleScript({ name: 'Task' });
+    expect(script).not.toContain('set planned date');
+  });
+
   it('should set defer date when provided', () => {
     const script = generateAppleScript({ name: 'Task', deferDate: '2026-03-15T00:00:00' });
     expect(script).toContain('set defer date of newTask to deferDateVar');

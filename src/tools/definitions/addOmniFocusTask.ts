@@ -7,6 +7,7 @@ export const schema = z.object({
   note: z.string().optional().describe("Additional notes for the task"),
   dueDate: z.string().optional().describe("The due date of the task in ISO format (YYYY-MM-DD or full ISO date)"),
   deferDate: z.string().optional().describe("The defer date of the task in ISO format (YYYY-MM-DD or full ISO date)"),
+  plannedDate: z.string().optional().describe("The planned date of the task in ISO format (YYYY-MM-DD or full ISO date). This is when you intend to work on the task, as distinct from when it is due."),
   flagged: z.boolean().optional().describe("Whether the task is flagged or not"),
   estimatedMinutes: z.number().optional().describe("Estimated time to complete the task, in minutes"),
   tags: z.array(z.string()).optional().describe("Tags to assign to the task"),

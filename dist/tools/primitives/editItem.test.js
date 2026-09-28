@@ -46,6 +46,14 @@ describe('generateAppleScript (editItem)', () => {
         const script = generateAppleScript({ id: 'abc', itemType: 'task', newDueDate: '' });
         expect(script).toContain('set due date of foundItem to missing value');
     });
+    it('should set planned date when newPlannedDate is provided', () => {
+        const script = generateAppleScript({ id: '123', itemType: 'task', newPlannedDate: '2026-03-15T00:00:00' });
+        expect(script).toContain('set planned date of foundItem to plannedDateVar');
+    });
+    it('should clear planned date when newPlannedDate is empty string', () => {
+        const script = generateAppleScript({ id: '123', itemType: 'task', newPlannedDate: '' });
+        expect(script).toContain('set planned date of foundItem to missing value');
+    });
     it('should set defer date when newDeferDate is provided', () => {
         const script = generateAppleScript({ id: 'abc', itemType: 'task', newDeferDate: '2026-03-25T00:00:00' });
         expect(script).toContain('set defer date of foundItem to deferDateVar');

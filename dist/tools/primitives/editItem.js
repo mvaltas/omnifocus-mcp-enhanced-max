@@ -15,11 +15,15 @@ export function generateAppleScript(params) {
     let dateSetupScript = '';
     const useDueDate = params.newDueDate !== undefined && params.newDueDate !== "";
     const useDeferDate = params.newDeferDate !== undefined && params.newDeferDate !== "";
+    const usePlannedDate = params.newPlannedDate !== undefined && params.newPlannedDate !== "";
     if (useDueDate) {
         dateSetupScript += formatDateForAppleScript(params.newDueDate, 'dueDateVar') + '\n';
     }
     if (useDeferDate) {
         dateSetupScript += formatDateForAppleScript(params.newDeferDate, 'deferDateVar') + '\n';
+    }
+    if (usePlannedDate) {
+        dateSetupScript += formatDateForAppleScript(params.newPlannedDate, 'plannedDateVar') + '\n';
     }
     // Construct AppleScript with error handling
     let script = `
@@ -133,6 +137,22 @@ ${appleScriptFindByName('flattened project', name)}
           -- Update defer date (date constructed outside tell block)
           set defer date of foundItem to deferDateVar
           set end of changedProperties to "defer date"
+`;
+        }
+    }
+    if (params.newPlannedDate !== undefined) {
+        if (params.newPlannedDate === "") {
+            script += `
+          -- Clear planned date
+          set planned date of foundItem to missing value
+          set end of changedProperties to "planned date"
+`;
+        }
+        else {
+            script += `
+          -- Update planned date (date constructed outside tell block)
+          set planned date of foundItem to plannedDateVar
+          set end of changedProperties to "planned date"
 `;
         }
     }

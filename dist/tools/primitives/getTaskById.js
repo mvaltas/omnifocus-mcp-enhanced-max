@@ -77,6 +77,7 @@ ${appleScriptFindByName('flattened task', taskName)}
         set taskCompleted to completed of theTask
         set taskDueDate to ""
         set taskDeferDate to ""
+        set taskPlannedDate to ""
         set taskEstimatedMinutes to ""
         
         try
@@ -92,13 +93,19 @@ ${appleScriptFindByName('flattened task', taskName)}
         end try
         
         try
+          if planned date of theTask is not missing value then
+            set taskPlannedDate to (planned date of theTask) as string
+          end if
+        end try
+        
+        try
           if estimated minutes of theTask is not missing value then
             set taskEstimatedMinutes to (estimated minutes of theTask) as string
           end if
         end try
         
         -- Return simple pipe-delimited result to avoid JSON escaping issues
-        return "SUCCESS|" & taskId & "|" & taskName & "|" & taskNote & "|" & parentId & "|" & parentName & "|" & projectId & "|" & projectName & "|" & hasChildren & "|" & childrenCount & "|" & tagNames & "|" & taskDueDate & "|" & taskDeferDate & "|" & taskFlagged & "|" & taskCompleted & "|" & taskEstimatedMinutes
+        return "SUCCESS|" & taskId & "|" & taskName & "|" & taskNote & "|" & parentId & "|" & parentName & "|" & projectId & "|" & projectName & "|" & hasChildren & "|" & childrenCount & "|" & tagNames & "|" & taskDueDate & "|" & taskDeferDate & "|" & taskPlannedDate & "|" & taskFlagged & "|" & taskCompleted & "|" & taskEstimatedMinutes
       end tell
     end tell
   on error errorMessage
@@ -132,7 +139,7 @@ export async function getTaskById(params) {
             if (stdout.startsWith('SUCCESS|')) {
                 // Parse pipe-delimited format
                 const parts = stdout.substring(8).split('|'); // Remove "SUCCESS|" prefix
-                const [id, name, note, parentId, parentName, projectId, projectName, hasChildrenStr, childrenCountStr, tagNamesStr, dueDate, deferDate, flaggedStr, completedStr, estimatedMinutesStr] = parts;
+                const [id, name, note, parentId, parentName, projectId, projectName, hasChildrenStr, childrenCountStr, tagNamesStr, dueDate, deferDate, plannedDate, flaggedStr, completedStr, estimatedMinutesStr] = parts;
                 // Parse tags from comma-separated quoted strings
                 let tags = [];
                 if (tagNamesStr && tagNamesStr.trim() !== '') {
@@ -151,6 +158,7 @@ export async function getTaskById(params) {
                     tags,
                     dueDate: dueDate || undefined,
                     deferDate: deferDate || undefined,
+                    plannedDate: plannedDate || undefined,
                     flagged: flaggedStr === 'true',
                     completed: completedStr === 'true',
                     estimatedMinutes: estimatedMinutesStr ? parseInt(estimatedMinutesStr) : undefined

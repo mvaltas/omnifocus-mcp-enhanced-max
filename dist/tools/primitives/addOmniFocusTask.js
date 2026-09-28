@@ -16,11 +16,15 @@ export function generateAppleScript(params) {
     let dateSetupScript = '';
     const useDueDate = !!params.dueDate;
     const useDeferDate = !!params.deferDate;
+    const usePlannedDate = !!params.plannedDate;
     if (useDueDate) {
         dateSetupScript += formatDateForAppleScript(params.dueDate, 'dueDateVar') + '\n';
     }
     if (useDeferDate) {
         dateSetupScript += formatDateForAppleScript(params.deferDate, 'deferDateVar') + '\n';
+    }
+    if (usePlannedDate) {
+        dateSetupScript += formatDateForAppleScript(params.plannedDate, 'plannedDateVar') + '\n';
     }
     // Construct AppleScript with error handling
     let script = `
@@ -63,6 +67,7 @@ ${appleScriptFindByName('flattened task', parentTaskName)}
         ${note ? `set note of newTask to "${note}"` : ''}
         ${useDueDate ? `set due date of newTask to dueDateVar` : ''}
         ${useDeferDate ? `set defer date of newTask to deferDateVar` : ''}
+        ${usePlannedDate ? `set planned date of newTask to plannedDateVar` : ''}
         ${flagged ? `set flagged of newTask to true` : ''}
         ${estimatedMinutes ? `set estimated minutes of newTask to ${estimatedMinutes}` : ''}
         
