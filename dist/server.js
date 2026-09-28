@@ -22,6 +22,8 @@ import * as filterTasksTool from './tools/definitions/filterTasks.js';
 // Import custom perspective tools
 import * as listCustomPerspectivesTool from './tools/definitions/listCustomPerspectives.js';
 import * as getCustomPerspectiveTasksTool from './tools/definitions/getCustomPerspectiveTasks.js';
+// Import API introspection tool (OmniFocus 4.9+)
+import * as getApiDeclarationsTool from './tools/definitions/getApiDeclarations.js';
 // Create an MCP server
 const server = new McpServer({
     name: "OmniFocus MCP",
@@ -48,6 +50,7 @@ server.tool("filter_tasks", "Advanced task filtering with unlimited perspective 
 // Custom perspective tools
 server.tool("list_custom_perspectives", "List all custom perspectives defined in OmniFocus", listCustomPerspectivesTool.schema.shape, listCustomPerspectivesTool.handler);
 server.tool("get_custom_perspective_tasks", "Get tasks from a specific OmniFocus custom perspective by name. Use this when user refers to a custom perspective name - these are custom views created in OmniFocus, NOT tags. Supports hierarchical tree display of task relationships.", getCustomPerspectiveTasksTool.schema.shape, getCustomPerspectiveTasksTool.handler);
+server.tool("get_omnifocus_api", "Look up the OmniFocus Omni Automation API as TypeScript declarations, read from the running copy of OmniFocus. Authoritative for the installed version. Use this before writing or debugging any Omni Automation script rather than guessing property names. Requires OmniFocus 4.9+.", getApiDeclarationsTool.schema.shape, getApiDeclarationsTool.handler);
 // Start the MCP server
 const transport = new StdioServerTransport();
 // Use await with server.connect to ensure proper connection
