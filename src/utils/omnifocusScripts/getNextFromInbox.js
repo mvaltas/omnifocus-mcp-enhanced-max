@@ -33,8 +33,8 @@
       return taskStatusMap[status] || "Unknown";
     }
 
-    // Access inbox directly (more efficient than filtering flattenedTasks)
-    const inboxTasks = inbox.tasks;
+    // Inbox is itself the TaskArray; it has no .tasks property (OmniFocus 4.9 declarations)
+    const inboxTasks = inbox;
     console.log(`Found ${inboxTasks.length} tasks in inbox`);
 
     // Filter out completed/dropped tasks and tasks without an added date
